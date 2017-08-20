@@ -8,8 +8,18 @@ namespace Compiler_CSharp
 {
     class Program
     {
-        static void Main(string[] args)
+        public Program (string filename, List<string> code)
         {
+            Filename = filename;
+            Code = code;
         }
+
+        public static Program LoadfromFile(string filename)
+        {
+            return new Program(filename, Utility.getFileContentToList(filename));
+        }
+
+        public string Filename { get; private set; }
+        public List<string> Code { get; private set; }
     }
 }
