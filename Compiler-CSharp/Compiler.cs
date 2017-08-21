@@ -11,20 +11,24 @@ namespace Compiler_CSharp
         public bool Sucess;
 
         // Parsing
-        public Dictionary<Parser.Token, Dictionary<Parser.ParsingErrorType, List<Parser.ProgramPosition>>> ParsingErrors;
+        public List<Parser.Error> ParsingErrors;
         public int ParsingErrorCount;
         public TimeSpan ParsingTime;
+
+        //Token
+        public List<Parser.Token> Tokens;
     }
 
+    [Flags]
     enum CompilerMode
     {
-        Parsing,
-        Normal
+        Nothing     = 0,
+        Parsing     = 1 << 0
     }
 
     class Compiler
     {
-        public Compiler(Program program, CompilerMode mode = CompilerMode.Normal)
+        public Compiler(Program program, CompilerMode mode = CompilerMode.Parsing)
         {
             this.program = program;
             Mode = mode;
@@ -43,9 +47,9 @@ namespace Compiler_CSharp
         {
             CompilationResult res = new CompilationResult();
             
-            if (Mode == CompilerMode.Normal || Mode == CompilerMode.Parsing)
+            if (Mode == CompilerMode.Parsing)
             {
-                if (!Parsing(ref res) || Mode == CompilerMode.Parsing)
+                if (!Parsing(ref res))
                 {
                     return res;
                 }
@@ -61,6 +65,8 @@ namespace Compiler_CSharp
             {
                 parser = new Parser.Parser(program);
             });
+
+            res.Tokens = parser.Tokens;
 
             res.ParsingErrors = parser.Errors;
             res.ParsingErrorCount = parser.ErrorCount;

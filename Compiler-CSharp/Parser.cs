@@ -24,26 +24,31 @@ namespace Compiler_CSharp
             bool line_has_changed = false;
 
             public List<Token> Tokens { get; private set; }
-            public Dictionary<Token, Dictionary<ParsingErrorType, List<ProgramPosition>>> Errors { get; private set; }
             public int ErrorCount { get; private set; }
+            public List<Error> Errors { get; private set; }
+            Error current;
 
-            Dictionary<ParsingErrorType, List<ProgramPosition>> promiseErrors;
-            
             private void Parse()
             {
                 col = 0;
                 line = 0;
 
                 Tokens = new List<Token>();
-                Errors = new Dictionary<Token, Dictionary<ParsingErrorType, List<ProgramPosition>>>();
-                promiseErrors = new Dictionary<ParsingErrorType, List<ProgramPosition>>();
+                Errors = new List<Error>();
                 ErrorCount = 0;
 
                 while (! EndOfFile())
                 {
                     Token t = getNextToken();
-                    AddPromiseErrors(t);
                     Tokens.Add(t);
+
+                    if (current != null)
+                    {
+                        current.SetToken(t);
+                        Errors.Add(current);
+                        current = null;
+                    }
+
                     if (EndOfFile())
                         break;
                     MoveForward();
@@ -51,13 +56,6 @@ namespace Compiler_CSharp
 
                 if (Tokens.Last().Type != TokenType.EOF)
                     Tokens.Add(new Token(TokenType.EOF, "", getRegion(getPosition())));
-            }
-
-            private void AddPromiseErrors(Token t)
-            {
-                ErrorCount += promiseErrors.Count;
-                Errors.Add(t, promiseErrors);
-                promiseErrors = new Dictionary<ParsingErrorType, List<ProgramPosition>>();
             }
 
             private Token getNextToken()
@@ -120,7 +118,7 @@ namespace Compiler_CSharp
 
                     else
                     {
-                        AddError(getPosition(), ParsingErrorType.UnknownCharacter);
+                        AddError(getPosition(), ErrorType.UnknownCharacter);
                         return new Token(TokenType.Unknown, new string(c, 1), getRegion(start));
                     }
                 }
@@ -169,7 +167,7 @@ namespace Compiler_CSharp
                             }
                             else
                             {
-                                AddError(getPosition(), ParsingErrorType.UnknownEscapeSequence);
+                                AddError(getPosition(), ErrorType.UnknownEscapeSequence);
                                 continue;
                             }
                         }
@@ -219,13 +217,13 @@ namespace Compiler_CSharp
                         {
                             if (is_custom_base)
                             {
-                                AddError(getPosition(), ParsingErrorType.CustomBaseAndFloat);
+                                AddError(getPosition(), ErrorType.CustomBaseAndFloat);
                                 continue;
                             }
 
                             if (is_float)
                             {
-                                AddError(getPosition(), ParsingErrorType.MultipleFloatPoint);
+                                AddError(getPosition(), ErrorType.MultipleFloatPoint);
                                 continue;
                             }
 
@@ -237,13 +235,13 @@ namespace Compiler_CSharp
                         {
                             if (is_custom_base)
                             {
-                                AddError(getPosition(), ParsingErrorType.MultipleBase);
+                                AddError(getPosition(), ErrorType.MultipleBase);
                                 continue;
                             }
                             
                             if (is_float)
                             {
-                                AddError(getPosition(), ParsingErrorType.BadCustomBasePrefix);
+                                AddError(getPosition(), ErrorType.BadCustomBasePrefix);
                                 continue;
                             }
 
@@ -271,7 +269,7 @@ namespace Compiler_CSharp
 
                 if (in_string)
                 {
-                    AddError(start, ParsingErrorType.StringUnterminated);
+                    AddError(start, ErrorType.StringUnterminated);
                     return new Token(TokenType.Unknown, content, region);
                 }
                 else if (in_num)
@@ -293,7 +291,7 @@ namespace Compiler_CSharp
                     return new Token(TokenType.EOF, content, getRegion(getPosition()));
                 }
                 
-                AddError(getPosition(), ParsingErrorType.UnknownCharacter);
+                AddError(getPosition(), ErrorType.UnknownCharacter);
                 return new Token(TokenType.Unknown, content, region);
             }
 
@@ -330,7 +328,7 @@ namespace Compiler_CSharp
             {
                 if (content.Length <= 2 || content[0] != '0')
                 {
-                    AddError(region.Start, ParsingErrorType.BadCustomBasePrefix);
+                    AddError(region.Start, ErrorType.BadCustomBasePrefix);
                     return false;
                 }
 
@@ -348,9 +346,9 @@ namespace Compiler_CSharp
                 else
                 {
                     if (IsLetter(num_base))
-                        AddError(new ProgramPosition(region.Start.Line, region.Start.Columns + 1), ParsingErrorType.CustomBaseUnknown);
+                        AddError(new ProgramPosition(region.Start.Line, region.Start.Columns + 1), ErrorType.CustomBaseUnknown);
                     else
-                        AddError(new ProgramPosition(region.Start.Line, region.Start.Columns + 1), ParsingErrorType.BadCustomBasePrefix);
+                        AddError(new ProgramPosition(region.Start.Line, region.Start.Columns + 1), ErrorType.BadCustomBasePrefix);
                     return false;
                 }
 
@@ -364,7 +362,7 @@ namespace Compiler_CSharp
                     }
                     catch (Exception )
                     {
-                        AddError(new ProgramPosition(region.Start.Line, region.Start.Columns + pos), ParsingErrorType.WrongCustomBaseValue);
+                        AddError(new ProgramPosition(region.Start.Line, region.Start.Columns + pos), ErrorType.WrongCustomBaseValue);
                         res = false;
                     }
                 }
@@ -419,11 +417,14 @@ namespace Compiler_CSharp
                 return new ProgramRegion(start, getPosition());
             }
 
-            private void AddError (ProgramPosition position, ParsingErrorType type)
+            private void AddError (ProgramPosition position, ErrorType type)
             {
-                if (!promiseErrors.ContainsKey(type))
-                    promiseErrors.Add(type, new List<ProgramPosition>());
-                promiseErrors[type].Add(position);
+                if (current == null)
+                {
+                    current = new Error();
+                }
+                ErrorCount++;
+                current.AddError(type, position);
             }
         }
     }

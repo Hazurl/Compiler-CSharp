@@ -4,7 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-
+using Compiler_CSharp.Test;
 
 namespace Compiler_CSharp
 {
@@ -16,7 +16,7 @@ namespace Compiler_CSharp
 
         static void Main(string[] args)
         {
-            Program program = Program.LoadfromFile(args.Count() > 2 ? args[1] : Path.Combine(TestDirectory, "test.txt"));
+            /*Program program = Program.LoadfromFile(args.Count() > 2 ? args[1] : Path.Combine(TestDirectory, "test.txt"));
             Compiler compiler = new Compiler(program);
 
             var result = compiler.Run();
@@ -35,7 +35,20 @@ namespace Compiler_CSharp
                 }
 
                 Utility.WriteLine("Compilation failed !");
-            }
+            }*/
+
+            Test.Test.NewSession("Test");
+
+            Test.Test.Header("Parsing");
+
+            Test.Test.Code("'unterminated string").ParsingError(Parser.ErrorType.StringUnterminated);
+            Test.Test.Code("00x0 0.0.0").ParsingError(Parser.ErrorType.MultipleFloatPoint);
+            Test.Test.Code("0 'ok'").Tokens(new List<Parser.TokenType> { Parser.TokenType.Integer, Parser.TokenType.String, Parser.TokenType.EOF });
+            Test.Test.Code("0 'ok").Tokens(new List<Parser.TokenType> { Parser.TokenType.Integer, Parser.TokenType.String, Parser.TokenType.EOF });
+
+            Test.Test.Code("'ok' 12").Tokens(new List<Parser.TokenType> { Parser.TokenType.Integer, Parser.TokenType.String, Parser.TokenType.EOF });
+
+            Test.Test.EndSession();
             
             Utility.Pause();
         }

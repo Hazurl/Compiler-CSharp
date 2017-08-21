@@ -50,6 +50,7 @@
     <Compile Include="ProgramPosition.cs" />
     <Compile Include="ProgramRegion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Test.cs" />
     <Compile Include="Token.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
