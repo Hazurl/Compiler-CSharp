@@ -36,32 +36,7 @@ namespace Compiler_CSharp
 
                 Utility.WriteLine("Compilation failed !");
             }
-
-            /*
-            if (parser.Errors.Count > 0)
-            {
-                Console.WriteLine("Errors : ");
-                foreach(Parser.ParsingError err in parser.Errors)
-                {
-                    err.Show(program);
-                    Utility.Pause();
-                }
-                Console.WriteLine();
-            }
-            */
-
-
-
-            /*
-            foreach (var t in tokens)
-            {
-                Console.ReadLine();
-                if (t.Type != Parser.TokenType.EOF)
-                    Console.WriteLine(t.ToString().Replace("\n", "\\n") + "; Content : |" + t.Location.Content(program.Code).Replace("\n", "\\n") + "|");
-                else
-                    Console.WriteLine(t);
-            }
-            */
+            
             Utility.Pause();
         }
 
