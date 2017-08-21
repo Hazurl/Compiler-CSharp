@@ -46,6 +46,7 @@ namespace Compiler_CSharp
                     {
                         current.SetToken(t);
                         Errors.Add(current);
+                        ErrorCount += current.Errors.Count;
                         current = null;
                     }
 
@@ -241,7 +242,7 @@ namespace Compiler_CSharp
                             
                             if (is_float)
                             {
-                                AddError(getPosition(), ErrorType.BadCustomBasePrefix);
+                                AddError(getPosition(), ErrorType.FloatAndCutomBase);
                                 continue;
                             }
 
@@ -423,7 +424,6 @@ namespace Compiler_CSharp
                 {
                     current = new Error();
                 }
-                ErrorCount++;
                 current.AddError(type, position);
             }
         }

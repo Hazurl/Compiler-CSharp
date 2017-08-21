@@ -37,18 +37,7 @@ namespace Compiler_CSharp
                 Utility.WriteLine("Compilation failed !");
             }*/
 
-            Test.Test.NewSession("Test");
-
-            Test.Test.Header("Parsing");
-
-            Test.Test.Code("'unterminated string").ParsingError(Parser.ErrorType.StringUnterminated);
-            Test.Test.Code("00x0 0.0.0").ParsingError(Parser.ErrorType.MultipleFloatPoint);
-            Test.Test.Code("0 'ok'").Tokens(new List<Parser.TokenType> { Parser.TokenType.Integer, Parser.TokenType.String, Parser.TokenType.EOF });
-            Test.Test.Code("0 'ok").Tokens(new List<Parser.TokenType> { Parser.TokenType.Integer, Parser.TokenType.String, Parser.TokenType.EOF });
-
-            Test.Test.Code("'ok' 12").Tokens(new List<Parser.TokenType> { Parser.TokenType.Integer, Parser.TokenType.String, Parser.TokenType.EOF });
-
-            Test.Test.EndSession();
+            Test.Test.All();
             
             Utility.Pause();
         }

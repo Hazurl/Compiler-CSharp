@@ -215,6 +215,15 @@ namespace Compiler_CSharp
                 current.EnterHeader(header);
             }
 
+            public static void All()
+            {
+                NewSession("Test All");
+
+                TestParser.DoTest();
+
+                EndSession();
+            }
+
         }
     }
 }
