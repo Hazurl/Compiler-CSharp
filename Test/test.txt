@@ -1,6 +1,156 @@
-if (ok) {
-	"ok"
+# proc for procedure
+proc my_function (int i, int j) {
+	
 }
 
-"...
+int my_function(int i) {
+	retur i + 1;
+}
+
+# or
+
+int my_function(int i) -> i + 1;
+
+# class
+class Test {
+	priv int i;
+	pub get I -> i; # aka return i
+	pub set I -> I; # aka i = I
+
+	# or
+
+	# aka pub get Property -> j
+	[get, set, alias:Property] 
+	priv int j;
+
+	# or more facy
+
+	priv int k;
+	pub get k -> this.k * 100;
+	pub set k -> k / 100;
+
+	# Ctor, Dtor, Copy
+	pub new (int i, int j) 	-> { i, j };
+	pub new (int i) 		-> new (i, i);
+	pub new () 				-> new (0, 0);
+
+	pub new (Test t)	 	-> new (t.i, t.j);
+
+	# i.e. rien, can be ommited
+	[default]
+	pub delete ();
+
+
+	pub static Test create(int n) {
+		return new (n, n);
+	}
+
+	# or 
+
+	pub static Test create(int n) -> new (n, n);
+}
+
+# Template
+
+[ compile
+	<int>
+	<double>
+	<float>
+	<uint>
+	<long>
+]
+template List<T, uint InitCapacity> 
+# useless stuff
+where T in {int, double, float, uint, long} 
+where T inherit Cloneable, Moveable # random class
+where T is not char
+where T is not ptr # this
+where T is not ref # and this har equivalent to
+where T is plaintype # this
+where InitCapacity > 0
+{
+	priv ptr T data;
+
+	[get]
+	priv uint size;
+	[get]
+	priv uint capacity;
+	
+	# To create the array, the capacity must be defined before
+	# The order is wrong
+	# so instead of moving capacity above the array
+	# you can write :
+	pub new () -> { capacity = InitCapacity, new T[InitCapacity], 0 };
+
+	pub proc add(T t) 
+	{
+		if (size >= capacity) 
+		{
+			reserve();
+		}
+	
+		data[size] = t;
+		size++;
+		return true;
+	}
+
+	pub T pop() -> data[--size];
+
+	pub proc clear() -> size = 0;
+
+	pub ptr T to_array() 
+	{
+		auto a = new T[size];
+
+		for (uint idx = size - 1; idx >= 0; ++idx) 
+		{
+			a[idx] = data[idx];
+		}
+
+		return a;
+	}
+
+	priv proc reserve(uint new_capacity = capacity * 2)
+	{
+		auto a = new T[new_capacity];
+
+		for (uint idx = size - 1; idx >= 0; ++idx) 
+		{
+			a[idx] = data[idx];
+		}
+
+		delete data[] = a;
+	}
+} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

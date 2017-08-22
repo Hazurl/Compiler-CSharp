@@ -106,6 +106,7 @@ namespace Compiler_CSharp
 
             string name;
             string header;
+            string section;
 
             long success;
             long testCount;
@@ -119,15 +120,17 @@ namespace Compiler_CSharp
                 if (success < testCount)
                 {
                     Utility.WriteLine("Errors:", ConsoleColor.Red);
-                    foreach (var header in failedTests)
+                    foreach (var headerSection in failedTests)
                     {
-                        if (header.Value.Count == 0)
+                        if (headerSection.Value.Count == 0)
                         {
                             continue;
                         }
 
-                        Utility.WriteLine("# " + header.Key, ConsoleColor.Cyan);
-                        foreach (var err in header.Value)
+                        string key = headerSection.Key.ToString();
+                        Utility.WriteLine("# " + key, ConsoleColor.Cyan);
+
+                        foreach (var err in headerSection.Value)
                         {
                             Utility.Write("\t" + err.Item1);
                             Utility.Write(" =/=> ", ConsoleColor.Magenta);
@@ -154,7 +157,8 @@ namespace Compiler_CSharp
 
                 Utility.Write("\tERROR", ConsoleColor.Red);
 
-                failedTests[header].Add( new Tuple<string, string, string>(code, expected, result));
+                string key = section == "" ? header : header + '.' + section;
+                failedTests[key].Add( new Tuple<string, string, string>(code, expected, result));
 
                 Utility.Write(": " + code);
                 Utility.Write(" =/=> ", ConsoleColor.Magenta);
@@ -168,10 +172,21 @@ namespace Compiler_CSharp
             void EnterHeader(string name)
             {
                 header = name;
+                section = "";
                 Utility.WriteLine("# " + name, ConsoleColor.Cyan);
                 if (!failedTests.ContainsKey(name))
                 {
                     failedTests[name] = new List<Tuple<string, string, string>>();
+                }
+            }
+
+            void EnterSection(string name)
+            {
+                section = name;
+                Utility.WriteLine("## " + name, ConsoleColor.DarkCyan);
+                if (!failedTests.ContainsKey(header + '.' + name))
+                {
+                    failedTests[header + '.' + name] = new List<Tuple<string, string, string>>();
                 }
             }
 
@@ -213,6 +228,15 @@ namespace Compiler_CSharp
                     throw new Exception("You must start a new Test session to perform test");
                 }
                 current.EnterHeader(header);
+            }
+
+            public static void Section(string section)
+            {
+                if (current == null)
+                {
+                    throw new Exception("You must start a new Test session to perform test");
+                }
+                current.EnterSection(section);
             }
 
             public static void All()

@@ -13,7 +13,7 @@ namespace Compiler_CSharp
         // Parsing
         public List<Parser.Error> ParsingErrors;
         public int ParsingErrorCount;
-        public TimeSpan ParsingTime;
+        public long ParsingTimeMs;
 
         //Token
         public List<Parser.Token> Tokens;
@@ -61,7 +61,7 @@ namespace Compiler_CSharp
 
         private bool Parsing(ref CompilationResult res)
         {
-            res.ParsingTime = Utility.TimeCounter(() =>
+            res.ParsingTimeMs = Utility.TimeCounterMs(() =>
             {
                 parser = new Parser.Parser(program);
             });

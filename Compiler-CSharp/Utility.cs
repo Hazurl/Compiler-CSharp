@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,11 +10,13 @@ namespace Compiler_CSharp
     class Utility
     {
         public delegate void LamdaDeleguate();
-        public static TimeSpan TimeCounter(LamdaDeleguate func)
+        public static long TimeCounterMs(LamdaDeleguate func)
         {
-            DateTime start = DateTime.Now;
+            Stopwatch t = new Stopwatch();
+            t.Start();
             func();
-            return DateTime.Now.Subtract(start);
+            t.Stop();
+            return t.ElapsedMilliseconds;
         }
 
         public static List<string> getFileContentToList(string path)

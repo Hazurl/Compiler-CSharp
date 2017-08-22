@@ -37,25 +37,28 @@ namespace Compiler_CSharp
                 Errors = new List<Error>();
                 ErrorCount = 0;
 
-                while (! EndOfFile())
+                if (!CheckEmptyProgram())
                 {
-                    Token t = getNextToken();
-                    Tokens.Add(t);
-
-                    if (current != null)
+                    while (!EndOfFile())
                     {
-                        current.SetToken(t);
-                        Errors.Add(current);
-                        ErrorCount += current.Errors.Count;
-                        current = null;
-                    }
+                        Token t = getNextToken();
+                        Tokens.Add(t);
 
-                    if (EndOfFile())
-                        break;
-                    MoveForward();
+                        if (current != null)
+                        {
+                            current.SetToken(t);
+                            Errors.Add(current);
+                            ErrorCount += current.Errors.Count;
+                            current = null;
+                        }
+
+                        if (EndOfFile())
+                            break;
+                        MoveForward();
+                    }
                 }
 
-                if (Tokens.Last().Type != TokenType.EOF)
+                if (Tokens.Count == 0 || Tokens.Last().Type != TokenType.EOF)
                     Tokens.Add(new Token(TokenType.EOF, "", getRegion(getPosition())));
             }
 
@@ -258,7 +261,7 @@ namespace Compiler_CSharp
 
                             if (type == TokenType.CustomBaseNumber)
                                 CheckNumberRepresentation(content, reg);
-                            
+
                             return new Token(type, content, reg);
                         }
                     }
@@ -391,6 +394,29 @@ namespace Compiler_CSharp
                     line_has_changed = true;
                     line++;
                     col = 0;
+                }
+            }
+
+            private bool CheckEmptyProgram()
+            {
+                int _col = col;
+                int _line = line;
+
+                col--;
+                MoveForward();
+                if (EndOfFile())
+                {
+                    col = _col;
+                    line = _line;
+                    line_has_changed = false;
+                    return true;
+                }
+                else
+                {
+                    col = _col;
+                    line = _line;
+                    line_has_changed = false;
+                    return false;
                 }
             }
 
