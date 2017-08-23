@@ -46,12 +46,14 @@
     <Compile Include="Parser.cs" />
     <Compile Include="ParserError.cs" />
     <Compile Include="Application.cs" />
+    <Compile Include="PreProcessor.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramPosition.cs" />
     <Compile Include="ProgramRegion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Test.cs" />
     <Compile Include="TestParser.cs" />
+    <Compile Include="TestPreProcessor.cs" />
     <Compile Include="Token.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>

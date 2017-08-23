@@ -13,16 +13,54 @@ namespace Compiler_CSharp
             Unknown,
             EOF,
 
-            BracketL, BracketR,                 // { }
-            BraceL, BraceR,                     // [ ]
-            ParenthesisL, ParenthesisR,         // ( )
+            // Bracket
+            BraceL, BraceR,                                     // { }
+            BracketL, BracketR,                                 // [ ]
+            ParenthesisL, ParenthesisR,                         // ( )
 
-            Ident,                              // uN_nom_DIdent00
-            String,                             // "ok", 'ok'
+            // Basic
+            Ident,                                              // uN_nom_DIdent00
+            String,                                             // "ok", 'ok'
+            Integer,                                            // 42, 1000
+            Float,                                              // 0.12, .1, 0.0
+            CustomBaseNumber,                                   // 5266x8, 00101b, 0003231x3
+            
+            // Simple Operator
+            Plus, Minus, Slash, Star,                           // + - / *
+            Equal,                                              // =
+            Less, Greater,                                      // < >
+            Exclamation, Tilde, At,                             // ! ~ @
+            Percent, Caret,                                     // % ^
+            And, Or,                                            // & |
 
-            Integer,                            // 42, 1000
-            Float,                              // 0.12, .1, 0.0
-            CustomBaseNumber,                   // 5266x8, 00101b, 0003231x3
+            // Double Operator
+            DoubleEqual, LessEqual, GreaterEqual, ExclamationEqual,// == <= >= !=
+            PlusEqual, MinusEqual, SlashEqual, StarEqual,      // += -= /= *=
+            TildeEqual, PercentEqual, CaretEqual,               // ~= %= ^=
+            AndEqual, OrEqual,                                  // &= |=
+            DoubleLess, DoubleGreater,                          // << >>
+            DoublePlus, DoubleMinus, DoubleSlash, DoubleStar,   // ++ -- // **
+            DoubleExclamation, DoubleTilde, DoubleAt,           // !! ~~ @@
+            DoublePercent, DoubleCaret,                         // %% ^^
+            DoubleAnd, DoubleOr,                                // && ||
+
+            // Ponctuation
+            Colon, SemiColon, Comma,                            // : ; ,
+            DoubleColon,                                        // ::
+            Dot,                                                // .
+            Arrow,                                              // ->
+
+            // Keyword
+            If, Else,
+            Do, While,
+            For,
+            Foreach,
+
+            In, Is, Inherit, Not,
+
+            Delete, New, Return, Auto,
+            Class, Template, Where, Public, Private, Get, Set,
+            Pointer, Reference, Constant,
         }
 
         class Token
@@ -41,6 +79,11 @@ namespace Compiler_CSharp
             public override string ToString()
             {
                 return "Token [" + Type.ToString() + ":" + Content.ToString() + "] at " + Location;
+            }
+
+            public bool IsSame(Token token)
+            {
+                return Type == token.Type && Content == token.Content;
             }
         }
     }

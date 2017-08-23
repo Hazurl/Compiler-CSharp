@@ -17,13 +17,18 @@ namespace Compiler_CSharp
 
         //Token
         public List<Parser.Token> Tokens;
+
+        // PreProcessor
+        public List<Parser.Token> TokensPreProc;
+        public long PreProcTimeMs;
     }
 
     [Flags]
     enum CompilerMode
     {
-        Nothing     = 0,
-        Parsing     = 1 << 0
+        Nothing         = 0,
+        Parsing         = 1 << 0,
+        PreProcessor    = 1 << 1,
     }
 
     class Compiler
@@ -36,6 +41,8 @@ namespace Compiler_CSharp
 
         Program program;
         Parser.Parser parser;
+        PreProcessor preProcessor;
+
         public CompilerMode Mode { get; private set; }
 
         public void SetMode(CompilerMode mode)
@@ -47,9 +54,17 @@ namespace Compiler_CSharp
         {
             CompilationResult res = new CompilationResult();
             
-            if (Mode == CompilerMode.Parsing)
+            if ((Mode & CompilerMode.Parsing) != 0)
             {
                 if (!Parsing(ref res))
+                {
+                    return res;
+                }
+            }
+
+            if (res.Tokens != null && (Mode & CompilerMode.PreProcessor) != 0)
+            {
+                if (!PreProcessor(ref res))
                 {
                     return res;
                 }
@@ -75,6 +90,19 @@ namespace Compiler_CSharp
                 res.Sucess = false;
                 return false;
             }
+
+            return true;
+        }
+
+        private bool PreProcessor(ref CompilationResult res)
+        {
+            var tokens = res.Tokens;
+            res.PreProcTimeMs = Utility.TimeCounterMs(() =>
+            {
+                preProcessor = new PreProcessor(tokens);
+            });
+
+            res.TokensPreProc = preProcessor.Tokens;
 
             return true;
         }

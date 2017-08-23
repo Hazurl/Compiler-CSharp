@@ -123,11 +123,33 @@ where InitCapacity > 0
 	}
 } 
 
+#: Ceci est un commentaire 
+ : sur 
+ : plusieurs
+ : lignes
+ :#
 
+[Macro]
+new int {
+	IntManager::create	
+}
 
+# Ceci =>
+ptr i = new int(0);
+# devient
+ptr i = IntManager::create(0);
 
+[Macro]
+LINE_OFFSET(offset) {
+	(__LINE__ + offset)
+}
 
-
+# Ceci =>
+print(LINE_OFFSET(0));
+# devient
+print((__LINE__ + 0));
+# puis
+print((150));
 
 
 

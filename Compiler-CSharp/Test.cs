@@ -14,6 +14,7 @@ namespace Compiler_CSharp
             {
                 void ParsingError(Parser.ErrorType type);
                 void Tokens(List<Parser.TokenType> tokens);
+                void PreprocesseurTokens(List<Parser.TokenType> tokens);
             }
 
             class CodeTest : ITestable
@@ -72,6 +73,38 @@ namespace Compiler_CSharp
                     string resString = "";
                     List<Parser.TokenType> resTokens = new List<Parser.TokenType>();
                     foreach (var token in result.Tokens)
+                    {
+                        if (resString != "") resString += ", ";
+                        resString += "TokenType." + token.Type;
+
+                        resTokens.Add(token.Type);
+                    }
+
+                    if (resTokens.SequenceEqual(expectedTypes))
+                    {
+                        Test.Pass(Program.ToString(), resString);
+                    }
+                    else
+                    {
+                        string expected = "";
+                        foreach (var type in expectedTypes)
+                        {
+                            if (expected != "") expected += ", ";
+                            expected += "TokenType." + type;
+                        }
+
+                        Test.Fail(Program.ToString(), resString, expected);
+                    }
+                }
+
+                public void PreprocesseurTokens(List<Parser.TokenType> expectedTypes)
+                {
+                    Compiler.SetMode(CompilerMode.Parsing | CompilerMode.PreProcessor);
+                    var result = Compiler.Run();
+
+                    string resString = "";
+                    List<Parser.TokenType> resTokens = new List<Parser.TokenType>();
+                    foreach (var token in result.TokensPreProc)
                     {
                         if (resString != "") resString += ", ";
                         resString += "TokenType." + token.Type;
@@ -243,7 +276,8 @@ namespace Compiler_CSharp
             {
                 NewSession("Test All");
 
-                TestParser.DoTest();
+                //TestParser.DoTest();
+                TestPreProcessor.DoTest();
 
                 EndSession();
             }
