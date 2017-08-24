@@ -103,9 +103,9 @@ namespace Compiler_CSharp
                         else
                         {
                             MoveToNextLine();
+                            return getNextToken();
                         }
                     }
-
                     else if(c == '"' || c == '\'')
                     {
                         in_string = true;

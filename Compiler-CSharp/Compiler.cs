@@ -99,7 +99,7 @@ namespace Compiler_CSharp
             var tokens = res.Tokens;
             res.PreProcTimeMs = Utility.TimeCounterMs(() =>
             {
-                preProcessor = new PreProcessor(tokens);
+                preProcessor = new PreProcessor(program, tokens);
             });
 
             res.TokensPreProc = preProcessor.Tokens;

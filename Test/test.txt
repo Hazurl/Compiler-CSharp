@@ -140,7 +140,7 @@ ptr i = new int(0);
 ptr i = IntManager::create(0);
 
 [Macro]
-LINE_OFFSET(offset) {
+LINE_OFFSET (offset) {
 	(__LINE__ + offset)
 }
 
@@ -151,7 +151,10 @@ print((__LINE__ + 0));
 # puis
 print((150));
 
-
+[Macro]
+STR(arg) {
+	$arg
+}
 
 
 

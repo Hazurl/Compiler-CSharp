@@ -11,21 +11,19 @@ namespace Compiler_CSharp
         public Program (string filename, List<string> code)
         {
             Filename = filename;
-            FromFile = true;
             Code = code;
         }
 
         public Program(string code)
         {
-            Code = new List<string>();
-            Code.Add(code);
-            FromFile = false;
+            Code = new List<string>() { code };
+            Filename = "";
         }
 
         public Program(List<string> code)
         {
             Code = code;
-            FromFile = false;
+            Filename = "";
         }
 
         public static Program LoadfromFile(string filename)
@@ -33,9 +31,7 @@ namespace Compiler_CSharp
             return new Program(filename, Utility.getFileContentToList(filename));
         }
 
-        public bool FromFile { get; private set; }
         public string Filename { get; private set; }
-
         public List<string> Code { get; private set; }
 
 

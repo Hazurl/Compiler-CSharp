@@ -16,6 +16,8 @@ namespace Compiler_CSharp
                 Test.Header("PreProcessor");
                 Test.Code("__LINE__").PreprocesseurTokens(new List<TokenType> { TokenType.Integer, TokenType.EOF });
                 Test.Code("__COLUMN__").PreprocesseurTokens(new List<TokenType> { TokenType.Integer, TokenType.EOF });
+                Test.Code("__FILENAME__").PreprocesseurTokens(new List<TokenType> { TokenType.String, TokenType.EOF });
+                Test.Code("__STR__(ok tout va bien)").PreprocesseurTokens(new List<TokenType> { TokenType.String, TokenType.EOF });
             }
         }
     }

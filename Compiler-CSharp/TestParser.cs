@@ -50,10 +50,11 @@ namespace Compiler_CSharp
                 Test.Code("[]").Tokens(new List<TokenType>                   { TokenType.BracketL, TokenType.BracketR, TokenType.EOF });
 
                 Test.Code("# com").Tokens(new List<TokenType>                { TokenType.EOF });
+                Test.Code("# com", "0").Tokens(new List<TokenType>           { TokenType.Integer, TokenType.EOF });
                 Test.Code("#:0:#0").Tokens(new List<TokenType>               { TokenType.Integer, TokenType.EOF });
                 Test.Code("#:   0   :#0").Tokens(new List<TokenType>         { TokenType.Integer, TokenType.EOF });
                 Test.Code("#:# :#0").Tokens(new List<TokenType>              { TokenType.Integer, TokenType.EOF });
-                Test.Code("#: #::#:#0").Tokens(new List<TokenType>           { TokenType.Integer, TokenType.EOF });
+                Test.Code("#: #::", "#:#0").Tokens(new List<TokenType>       { TokenType.Integer, TokenType.EOF });
                 Test.Code("# :# 0").Tokens(new List<TokenType>               { TokenType.EOF });
                 Test.Code("#:#:#0").Tokens(new List<TokenType>               { TokenType.EOF });
 

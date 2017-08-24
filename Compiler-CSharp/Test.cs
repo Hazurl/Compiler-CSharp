@@ -19,7 +19,7 @@ namespace Compiler_CSharp
 
             class CodeTest : ITestable
             {
-                public CodeTest(Test test, string code)
+                public CodeTest(Test test, List<string> code)
                 {
                     Program = new Program(code);
                     Compiler = new Compiler(Program);
@@ -245,13 +245,14 @@ namespace Compiler_CSharp
                 current = null;
             }
 
-            public static ITestable Code(string code)
+            public static ITestable Code(params string[] code)
             {
                 if (current == null)
                 {
                     throw new Exception("You must start a new Test session to perform test");
                 }
-                return new CodeTest(current, code);
+
+                return new CodeTest(current, new List<string>(code));
             }
 
             public static void Header(string header)
