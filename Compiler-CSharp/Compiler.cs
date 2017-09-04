@@ -8,7 +8,11 @@ namespace Compiler_CSharp
 {
     class CompilationResult
     {
+        public CompilerMode ModeUsed;
         public bool Sucess;
+
+        // Program
+        public Program Program;
 
         // Parsing
         public List<Parser.Error> ParsingErrors;
@@ -19,7 +23,7 @@ namespace Compiler_CSharp
         public List<Parser.Token> Tokens;
 
         // PreProcessor
-        public List<Parser.Token> TokensPreProc;
+        public Program ProgramBeforeProcess;
         public long PreProcTimeMs;
     }
 
@@ -53,18 +57,20 @@ namespace Compiler_CSharp
         public CompilationResult Run ()
         {
             CompilationResult res = new CompilationResult();
-            
-            if ((Mode & CompilerMode.Parsing) != 0)
+            res.ModeUsed = Mode;
+            res.Program = program;
+
+            if ((Mode & CompilerMode.PreProcessor) != 0)
             {
-                if (!Parsing(ref res))
+                if (!PreProcessor(ref res))
                 {
                     return res;
                 }
             }
 
-            if (res.Tokens != null && (Mode & CompilerMode.PreProcessor) != 0)
+            if ((Mode & CompilerMode.Parsing) != 0)
             {
-                if (!PreProcessor(ref res))
+                if (!Parsing(ref res))
                 {
                     return res;
                 }
@@ -74,11 +80,25 @@ namespace Compiler_CSharp
             return res;
         }
 
+        private bool PreProcessor(ref CompilationResult res)
+        {
+            Program p = res.ProgramBeforeProcess = res.Program;
+            res.PreProcTimeMs = Utility.TimeCounterMs(() =>
+            {
+                preProcessor = new PreProcessor(p);
+            });
+
+            res.Program = preProcessor.Program;
+
+            return true;
+        }
+
         private bool Parsing(ref CompilationResult res)
         {
+            Program p = res.Program;
             res.ParsingTimeMs = Utility.TimeCounterMs(() =>
             {
-                parser = new Parser.Parser(program);
+                parser = new Parser.Parser(p);
             });
 
             res.Tokens = parser.Tokens;
@@ -94,17 +114,5 @@ namespace Compiler_CSharp
             return true;
         }
 
-        private bool PreProcessor(ref CompilationResult res)
-        {
-            var tokens = res.Tokens;
-            res.PreProcTimeMs = Utility.TimeCounterMs(() =>
-            {
-                preProcessor = new PreProcessor(program, tokens);
-            });
-
-            res.TokensPreProc = preProcessor.Tokens;
-
-            return true;
-        }
     }
 }

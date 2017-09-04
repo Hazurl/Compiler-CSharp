@@ -14,7 +14,7 @@ namespace Compiler_CSharp
             {
                 void ParsingError(Parser.ErrorType type);
                 void Tokens(List<Parser.TokenType> tokens);
-                void PreprocesseurTokens(List<Parser.TokenType> tokens);
+                void Preprocesseur(List<string> expected);
             }
 
             class CodeTest : ITestable
@@ -97,36 +97,28 @@ namespace Compiler_CSharp
                     }
                 }
 
-                public void PreprocesseurTokens(List<Parser.TokenType> expectedTypes)
+                public void Preprocesseur(List<string> expected)
                 {
-                    Compiler.SetMode(CompilerMode.Parsing | CompilerMode.PreProcessor);
+                    Compiler.SetMode(CompilerMode.PreProcessor);
                     var result = Compiler.Run();
 
-                    string resString = "";
-                    List<Parser.TokenType> resTokens = new List<Parser.TokenType>();
-                    foreach (var token in result.TokensPreProc)
+                    if (expected.Count != result.Program.Code.Count)
                     {
-                        if (resString != "") resString += ", ";
-                        resString += "TokenType." + token.Type;
-
-                        resTokens.Add(token.Type);
+                        Test.Fail(Program.ToString(), result.Program.ToString(), new Program(expected).ToString());
+                        return;
                     }
 
-                    if (resTokens.SequenceEqual(expectedTypes))
+                    for (int i = 0; i < expected.Count; ++i)
                     {
-                        Test.Pass(Program.ToString(), resString);
-                    }
-                    else
-                    {
-                        string expected = "";
-                        foreach (var type in expectedTypes)
+                        string line = expected[i];
+                        if (line != result.Program.Code[i])
                         {
-                            if (expected != "") expected += ", ";
-                            expected += "TokenType." + type;
+                            Test.Fail(Program.ToString(), result.Program.ToString(), new Program(expected).ToString());
+                            return;
                         }
-
-                        Test.Fail(Program.ToString(), resString, expected);
                     }
+
+                    Test.Pass(Program.ToString(), result.Program.ToString());
                 }
             }
 
@@ -277,7 +269,7 @@ namespace Compiler_CSharp
             {
                 NewSession("Test All");
 
-                //TestParser.DoTest();
+                TestParser.DoTest();
                 TestPreProcessor.DoTest();
 
                 EndSession();

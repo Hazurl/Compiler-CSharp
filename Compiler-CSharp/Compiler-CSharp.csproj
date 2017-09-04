@@ -48,6 +48,7 @@
     <Compile Include="Application.cs" />
     <Compile Include="PreProcessor.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="ProgramIterator.cs" />
     <Compile Include="ProgramPosition.cs" />
     <Compile Include="ProgramRegion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

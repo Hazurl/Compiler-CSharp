@@ -19,9 +19,7 @@ namespace Compiler_CSharp
 
             Program program;
             List<string> code;
-            int line;
-            int col;
-            bool line_has_changed = false;
+            ProgramIterator mover;
 
             public List<Token> Tokens { get; private set; }
             public int ErrorCount { get; private set; }
@@ -30,16 +28,16 @@ namespace Compiler_CSharp
 
             private void Parse()
             {
-                col = 0;
-                line = 0;
+                mover = new ProgramIterator(code);
 
                 Tokens = new List<Token>();
                 Errors = new List<Error>();
                 ErrorCount = 0;
 
-                if (!CheckEmptyProgram())
+                if (!mover.EmptyProgram())
                 {
-                    while (!EndOfFile())
+                    mover.Forward(); // place on the first character
+                    while (!mover.EOF())
                     {
                         Token t = getNextToken();
                         Tokens.Add(t);
@@ -52,20 +50,20 @@ namespace Compiler_CSharp
                             current = null;
                         }
 
-                        if (EndOfFile())
+                        if (mover.EOF())
                             break;
-                        MoveForward();
+                        mover.Forward();
                     }
                 }
 
                 if (Tokens.Count == 0 || Tokens.Last().Type != TokenType.EOF)
-                    Tokens.Add(new Token(TokenType.EOF, "", getRegion(getPosition())));
+                    Tokens.Add(new Token(TokenType.EOF, "", mover.RegionSince(mover.Position())));
             }
 
             private Token getNextToken()
             {
                 string content = "";
-                ProgramPosition start = getPosition();
+                ProgramPosition start = mover.Position();
 
                 bool in_string = false;
                 bool double_quotes = false;
@@ -86,23 +84,23 @@ namespace Compiler_CSharp
 
                 SkipBlank();
                 
-                if (EndOfFile())
-                    return new Token(TokenType.EOF, "", getRegion(getPosition()));
+                if (mover.EOF())
+                    return new Token(TokenType.EOF, "", mover.RegionSince(mover.Position()));
 
                 {
-                    char c = CurrentChar();
-                    start = getPosition();
+                    char c = mover.Current();
+                    start = mover.Position();
 
                     if (c == '#')
                     {
-                        MoveForward();
-                        if (!EndOfFile() && CurrentChar() == ':')
+                        mover.Forward();
+                        if (!mover.EOF() && mover.Current() == ':')
                         {
                             commentary++;
                         }
                         else
                         {
-                            MoveToNextLine();
+                            mover.NextLine();
                             return getNextToken();
                         }
                     }
@@ -141,36 +139,36 @@ namespace Compiler_CSharp
                     }
                     else if (c == '.')
                     {
-                        MoveForward();
-                        if (EndOfFile() || !IsDigit(CurrentChar()))
+                        mover.Forward();
+                        if (mover.EOF() || !IsDigit(mover.Current()))
                         {
-                            MoveBackward();
-                            return new Token(TokenType.Dot, ".", getRegion(start));
+                            mover.Backward();
+                            return new Token(TokenType.Dot, ".", mover.RegionSince(start));
                         }
-                        MoveBackward();
+                        mover.Backward();
                         in_num = is_float = true;
                         content += c;
                     }
                     else if (c == '{')
-                        return new Token(TokenType.BraceL, "{", getRegion(start));
+                        return new Token(TokenType.BraceL, "{", mover.RegionSince(start));
                     else if (c == '}')
-                        return new Token(TokenType.BraceR, "}", getRegion(start));
+                        return new Token(TokenType.BraceR, "}", mover.RegionSince(start));
                     else if (c == '[')
-                        return new Token(TokenType.BracketL, "[", getRegion(start));
+                        return new Token(TokenType.BracketL, "[", mover.RegionSince(start));
                     else if (c == ']')
-                        return new Token(TokenType.BracketR, "]", getRegion(start));
+                        return new Token(TokenType.BracketR, "]", mover.RegionSince(start));
                     else if (c == '(')
-                        return new Token(TokenType.ParenthesisL, "(", getRegion(start));
+                        return new Token(TokenType.ParenthesisL, "(", mover.RegionSince(start));
                     else if (c == ')')
-                        return new Token(TokenType.ParenthesisR, ")", getRegion(start));
+                        return new Token(TokenType.ParenthesisR, ")", mover.RegionSince(start));
                     else if (c == ';')
-                        return new Token(TokenType.SemiColon, ";", getRegion(start));
+                        return new Token(TokenType.SemiColon, ";", mover.RegionSince(start));
                     else if (c == ',')
-                        return new Token(TokenType.Comma, ",", getRegion(start));
+                        return new Token(TokenType.Comma, ",", mover.RegionSince(start));
                     else
                     {
-                        AddError(getPosition(), ErrorType.UnknownCharacter);
-                        return new Token(TokenType.Unknown, new string(c, 1), getRegion(start));
+                        AddError(mover.Position(), ErrorType.UnknownCharacter);
+                        return new Token(TokenType.Unknown, new string(c, 1), mover.RegionSince(start));
                     }
                 }
 
@@ -179,43 +177,43 @@ namespace Compiler_CSharp
                     if (escape > 0)
                         escape--;
 
-                    MoveForward();
+                    mover.Forward();
 
-                    if (EndOfFile())
+                    if (mover.EOF())
                         break;
 
-                    char c = CurrentChar();
+                    char c = mover.Current();
 
                     if (commentary > 0)
                     {
                         if (c == ':')
                         {
-                            MoveForward();
-                            if (CurrentChar() == '#')
+                            mover.Forward();
+                            if (mover.Current() == '#')
                             {
                                 commentary--;
                                 if (commentary == 0)
                                 {
-                                    MoveForward();
+                                    mover.Forward();
                                     return getNextToken();
                                 }
                             }
                             else
                             {
-                                MoveBackward();
+                                mover.Backward();
                             }
                         }
 
                         if (c == '#')
                         {
-                            MoveForward();
-                            if (!EndOfFile() && CurrentChar() == ':')
+                            mover.Forward();
+                            if (!mover.EOF() && mover.Current() == ':')
                             {
                                 commentary++;
                             }
                             else
                             {
-                                MoveBackward();
+                                mover.Backward();
                             }
                         }
                         continue;
@@ -253,7 +251,7 @@ namespace Compiler_CSharp
                             }
                             else
                             {
-                                AddError(getPosition(), ErrorType.UnknownEscapeSequence);
+                                AddError(mover.Position(), ErrorType.UnknownEscapeSequence);
                                 continue;
                             }
                         }
@@ -261,11 +259,11 @@ namespace Compiler_CSharp
                         {
                             if (c == '"' && double_quotes || c == '\'' && !double_quotes)
                             {
-                                return new Token(TokenType.String, content, getRegion(start));
+                                return new Token(TokenType.String, content, mover.RegionSince(start));
                             }
                             else
                             {
-                                if (line_has_changed)
+                                if (mover.LineHasChanged())
                                     content += '\n';
                                 content += c;
                                 continue;
@@ -275,41 +273,41 @@ namespace Compiler_CSharp
 
                     if (in_ident)
                     {
-                        if (!line_has_changed && (IsLetter(c) || IsDigit(c) || c == '_'))
+                        if (!mover.LineHasChanged() && (IsLetter(c) || IsDigit(c) || c == '_'))
                         {
                             content += c;
                             continue;
                         }
                         else
                         {
-                            MoveBackward();
-                            return new Token(TypeOfIdent(content), content, getRegion(start));
+                            mover.Backward();
+                            return new Token(TypeOfIdent(content), content, mover.RegionSince(start));
                         }
                     }
 
                     if (in_num)
                     {
-                        if (!line_has_changed && IsDigit(c))
+                        if (!mover.LineHasChanged() && IsDigit(c))
                         {
                             content += c;
                             continue;
                         }
-                        else if (!line_has_changed && is_custom_base && (c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'))
+                        else if (!mover.LineHasChanged() && is_custom_base && (c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'))
                         {
                             content += c;
                             continue;
                         }
-                        else if (!line_has_changed && c == '.')
+                        else if (!mover.LineHasChanged() && c == '.')
                         {
                             if (is_custom_base)
                             {
-                                AddError(getPosition(), ErrorType.CustomBaseAndFloat);
+                                AddError(mover.Position(), ErrorType.CustomBaseAndFloat);
                                 continue;
                             }
 
                             if (is_float)
                             {
-                                AddError(getPosition(), ErrorType.MultipleFloatPoint);
+                                AddError(mover.Position(), ErrorType.MultipleFloatPoint);
                                 continue;
                             }
 
@@ -317,17 +315,17 @@ namespace Compiler_CSharp
                             content += c;
                             continue;
                         }
-                        else if (!line_has_changed && IsLetter(c))
+                        else if (!mover.LineHasChanged() && IsLetter(c))
                         {
                             if (is_custom_base)
                             {
-                                AddError(getPosition(), ErrorType.MultipleBase);
+                                AddError(mover.Position(), ErrorType.MultipleBase);
                                 continue;
                             }
                             
                             if (is_float)
                             {
-                                AddError(getPosition(), ErrorType.FloatAndCutomBase);
+                                AddError(mover.Position(), ErrorType.FloatAndCutomBase);
                                 continue;
                             }
 
@@ -337,9 +335,9 @@ namespace Compiler_CSharp
                         }
                         else
                         {
-                            MoveBackward();
+                            mover.Backward();
                             TokenType type = is_custom_base ? TokenType.CustomBaseNumber : is_float ? TokenType.Float : TokenType.Integer;
-                            ProgramRegion reg = getRegion(start);
+                            ProgramRegion reg = mover.RegionSince(start);
 
                             if (type == TokenType.CustomBaseNumber)
                                 CheckNumberRepresentation(content, reg);
@@ -351,27 +349,27 @@ namespace Compiler_CSharp
                     if (can_be_arrow && c == '>')
                     {
                         content += c;
-                        return new Token(TokenType.Arrow, content + c, getRegion(start));
+                        return new Token(TokenType.Arrow, content + c, mover.RegionSince(start));
                     }
                     else if (can_be_double && content[0] == c)
                     {
                         content += c;
-                        return new Token(TypeOfDouble(content), content, getRegion(start));
+                        return new Token(TypeOfDouble(content), content, mover.RegionSince(start));
                     }
                     else if (equal_operator && c == '=')
                     {
                         content += c;
-                        return new Token(TypeOfEqualOperator(content), content, getRegion(start));
+                        return new Token(TypeOfEqualOperator(content), content, mover.RegionSince(start));
                     }
                     else
                     {
-                        MoveBackward();
-                        return new Token(TypeOfSimple(content), content, getRegion(start));
+                        mover.Backward();
+                        return new Token(TypeOfSimple(content), content, mover.RegionSince(start));
                     }
 
                 } while (true);
 
-                ProgramRegion region = getRegion(start);
+                ProgramRegion region = mover.RegionSince(start);
 
                 if (in_string)
                 {
@@ -398,35 +396,17 @@ namespace Compiler_CSharp
 
                 if (content.Length == 0)
                 {
-                    return new Token(TokenType.EOF, content, getRegion(getPosition()));
+                    return new Token(TokenType.EOF, content, mover.RegionSince(mover.Position()));
                 }
                 
-                AddError(getPosition(), ErrorType.UnknownCharacter);
+                AddError(mover.Position(), ErrorType.UnknownCharacter);
                 return new Token(TokenType.Unknown, content, region);
-            }
-
-            private bool EndOfFile()
-            {
-                return line >= code.Count;
-            }
-
-            private char CurrentChar()
-            {
-                return code[line][col];
-            }
-
-            private char NextChar()
-            {
-                MoveForward();
-                char c = CurrentChar();
-                MoveBackward();
-                return c;
             }
 
             private void SkipBlank()
             {
-                while (!EndOfFile() && IsSpace(CurrentChar()))
-                    MoveForward();
+                while (!mover.EOF() && IsSpace(mover.Current()))
+                    mover.Forward();
             }
 
             private bool IsSpace(char c)
@@ -503,65 +483,6 @@ namespace Compiler_CSharp
                 return c == '+' || c == '-' || c == '*' || c == '|' || c == '^' || c == '&' ||
                        c == '/' || c == '=' || c == '~' || c == '>' || c == '<' || c == '!' ||
                        c == '%';
-            }
-
-            private void MoveForward()
-            {
-                line_has_changed = false;
-                col++;
-
-                while (!EndOfFile() && col >= code[line].Length)
-                {
-                    line_has_changed = true;
-                    line++;
-                    col = 0;
-                }
-            }
-
-            private void MoveToNextLine()
-            {
-                int last_line = line;
-                while(!EndOfFile() && last_line == line)
-                {
-                    MoveForward();
-                }
-            }
-
-            private bool CheckEmptyProgram()
-            {
-                int _col = col;
-                int _line = line;
-
-                col--;
-                MoveForward();
-                if (EndOfFile())
-                {
-                    col = _col;
-                    line = _line;
-                    line_has_changed = false;
-                    return true;
-                }
-                else
-                {
-                    col = _col;
-                    line = _line;
-                    line_has_changed = false;
-                    return false;
-                }
-            }
-
-            private void MoveBackward()
-            {
-                line_has_changed = false;
-                while (col == 0)
-                {
-                    if (line == 0)
-                        throw new Exception("Cannot move backward when the cursor is on the first character !");
-                    line--;
-                    line_has_changed = true;
-                    col = code[line].Length;
-                }
-                col--;
             }
 
             private TokenType TypeOfDouble(string content)
@@ -665,16 +586,6 @@ namespace Compiler_CSharp
                 }
 
                 return TokenType.Ident;
-            }
-
-            private ProgramPosition getPosition()
-            {
-                return new ProgramPosition(line, col);
-            }
-
-            private ProgramRegion getRegion(ProgramPosition start)
-            {
-                return new ProgramRegion(start, getPosition());
             }
 
             private void AddError (ProgramPosition position, ErrorType type)

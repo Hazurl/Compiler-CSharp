@@ -14,16 +14,16 @@ namespace Compiler_CSharp
             Code = code;
         }
 
-        public Program(string code)
+        public Program(params string[] code)
         {
-            Code = new List<string>() { code };
-            Filename = "";
+            Code = new List<string>(code);
+            Filename = "DefaultFilenameTest.txt";
         }
 
         public Program(List<string> code)
         {
             Code = code;
-            Filename = "";
+            Filename = "DefaultFilenameTest.txt";
         }
 
         public static Program LoadfromFile(string filename)

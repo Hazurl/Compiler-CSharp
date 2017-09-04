@@ -14,10 +14,12 @@ namespace Compiler_CSharp
             public static void DoTest()
             {
                 Test.Header("PreProcessor");
-                Test.Code("__LINE__").PreprocesseurTokens(new List<TokenType> { TokenType.Integer, TokenType.EOF });
-                Test.Code("__COLUMN__").PreprocesseurTokens(new List<TokenType> { TokenType.Integer, TokenType.EOF });
-                Test.Code("__FILENAME__").PreprocesseurTokens(new List<TokenType> { TokenType.String, TokenType.EOF });
-                Test.Code("__STR__(ok tout va bien)").PreprocesseurTokens(new List<TokenType> { TokenType.String, TokenType.EOF });
+                Test.Code("__LINE__").Preprocesseur(new List<string> { "1" });
+                Test.Code("__COLUMN__").Preprocesseur(new List<string> { "0" });
+                Test.Code("", "__LINE__").Preprocesseur(new List<string> { "", "2" });
+                Test.Code("", " __COLUMN__").Preprocesseur(new List<string> { "", " 1" });
+                Test.Code("__FILENAME__").Preprocesseur(new List<string> { "DefaultFilenameTest.txt" });
+                Test.Code("__STR__(ok tout va bien)").Preprocesseur(new List<string> { "ok tout va bien" });
             }
         }
     }

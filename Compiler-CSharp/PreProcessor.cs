@@ -8,274 +8,235 @@ namespace Compiler_CSharp
 {
     class PreProcessor
     {
-        private class TokenPart : IEquatable<TokenPart>
+        private class Replacer
         {
-            public TokenPart(Parser.TokenType type, string content)
+            public Replacer(string replacement)
             {
-                Content = content;
-                Type = type;
+                Replacement = replacement;
+                IsFunction = false;
             }
 
-            public string Content;
-            public Parser.TokenType Type;
-
-            public Parser.Token ToToken(Parser.ProgramRegion region)
-            {
-                return new Parser.Token(Type, Content, region);
-            }
-
-            public override string ToString()
-            {
-                return "'" + Content + "' of type " + Type;
-            }
-
-            public override int GetHashCode()
-            {
-                return Content.GetHashCode() ^ Type.GetHashCode();
-            }
-
-            public override bool Equals(object obj)
-            {
-                return Equals(obj as TokenPart);
-            }
-
-            public bool Equals(TokenPart t)
-            {
-                return Type == t.Type && Content == t.Content;
-            }
+            public bool IsFunction = false;
+            public int Argc = 0;
+            public string Replacement;
         }
 
-        private class Symbol : IEquatable<Symbol>
+        public PreProcessor(Program program)
         {
-            public Symbol(string content, Parser.TokenType type)
-            {
-                TokenPart = new TokenPart(type, content);
-            }
-
-            TokenPart TokenPart;
-            public bool is_function = false;
-
-            public override string ToString()
-            {
-                return "Symbol " + TokenPart;
-            }
-
-            public bool Equals(Symbol s)
-            {
-                return TokenPart.Equals(s.TokenPart);
-            }
-
-            public override int GetHashCode()
-            {
-                return TokenPart.GetHashCode();
-            }
-
-            public override bool Equals(object obj)
-            {
-                return Equals(obj as Symbol);
-            }
-        }
-
-        private class SymbolInfo
-        {
-            public SymbolInfo(Replacer replacer)
-            {
-                Replacer = replacer;
-            }
-
-            public SymbolInfo(Replacer replacer, List<string> args)
-            {
-                Replacer = replacer;
-                Args = args;
-            }
-
-            public Replacer Replacer;
-            public List<string> Args = null;
-        }
-
-        private class Replacer : IEquatable<Replacer>
-        {
-            public Replacer(string content, Parser.TokenType type)
-            {
-                Tokens = new List<TokenPart> { new TokenPart(type, content) };
-            }
-
-            public Replacer(List<TokenPart> tokens)
-            {
-                Tokens = tokens;
-            }
-
-            public List<TokenPart> Tokens;
-
-            public List<Parser.Token> ToTokenList(Parser.ProgramRegion region, List<string> argsName, List<List<TokenPart>> args)
-            {
-                List<Parser.Token> tokens = new List<Parser.Token>();
-
-                for (int i = 0; i < Tokens.Count; i++)
-                {
-                    TokenPart tokenPart = Tokens[i];
-                    if (tokenPart.Type == Parser.TokenType.String)
-                    {
-                        int idx = argsName.FindIndex((string s) => { return s == tokenPart.Content; });
-                        if (idx == -1)
-                        {
-                            tokens.Add(tokenPart.ToToken(region));
-                        }
-                        else
-                        {
-                            foreach (TokenPart t in args[idx])
-                            {
-                                tokens.Add(t.ToToken(region));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        tokens.Add(tokenPart.ToToken(region));
-                    }
-                }
-
-                return tokens;
-            }
-            public override bool Equals(object obj)
-            {
-                return Equals(obj as Replacer);
-            }
-
-            public override int GetHashCode()
-            {
-                return Tokens.GetHashCode();
-            }
-
-            public bool Equals(Replacer r)
-            {
-                return Tokens.Equals(r.Tokens);
-            }
-        }
-
-        public PreProcessor(Program program, List<Parser.Token> tokens)
-        {
-            previous = tokens;
-            this.program = program;
+            previous = program;
             Transform();
         }
 
-        List<Parser.Token> previous;
-        public List<Parser.Token> Tokens { get; private set; }
+        Program previous;
+        public Program Program { get; private set; }
+        ProgramIterator mover;
 
-        Program program;
+        Dictionary<string, Replacer> symbols;
 
-        Dictionary<Symbol, SymbolInfo> symbols;
+        List<string> code;
+        string codeLine;
 
         private void Transform()
         {
-            Tokens = new List<Parser.Token>();
-            symbols = new Dictionary<Symbol, SymbolInfo>();
+            mover = new ProgramIterator(previous.Code);
 
-            int line = -1;
+            symbols = new Dictionary<string, Replacer>();
+            code = new List<string>();
+            codeLine = "";
 
-            InitCommonMacro();
+            symbols["__FILENAME__"] = new Replacer(previous.Filename);
 
-            for (int i = 0; i < previous.Count - 1 /* EOF */; ++i)
+            mover.Forward();
+            for (int _ = mover.LineJumped(); _ > 0; --_)
             {
-                Parser.Token token = previous[i];
+                code.Add(codeLine);
+                codeLine = "";
+            }
 
-                if (line != token.Location.Start.Line)
+            while (!mover.EOF())
+            {
+                char c = mover.Current();
+
+                if (IsLetter(c))
                 {
-                    line = token.Location.Start.Line;
-                    Update(line_symbol, line.ToString(), Parser.TokenType.Integer);
-                }
-                Update(col_symbol, token.Location.Start.Columns.ToString(), Parser.TokenType.Integer);
-
-                Symbol s = TokenToSymbol(token);
-                if (symbols.ContainsKey(s))
-                {
-                    SymbolInfo info = symbols[s];
-
-                    List<string> args = new List<string>();
-                    List<List<TokenPart>> tokenParts = new List<List<TokenPart>>();
-
-                    if (info.Args != null)
+                    string ident = NextIdent();
+                    if (ident.Length == 0)
                     {
-                        args = info.Args;
-                        Utility.WriteLine("Arguments needed !", ConsoleColor.Yellow);
-                        int ii = i;
-                        ii++;
-                        Parser.Token t = previous[ii];
-                        if (t.Type == Parser.TokenType.ParenthesisL)
+                        break;
+                    }
+
+                    if (symbols.ContainsKey(ident))
+                    {
+                        Replacer r = symbols[ident];
+                        if (r.IsFunction)
                         {
-                            List<TokenPart> parts = new List<TokenPart>();
-                            while (t.Type != Parser.TokenType.ParenthesisR)
-                            {
-                                ii++;
-                                t = previous[ii];
-
-                                if (t.Type == Parser.TokenType.Comma)
-                                {
-                                    tokenParts.Add(parts);
-                                    parts = new List<TokenPart>();
-                                }
-                                else
-                                {
-                                    parts.Add(new TokenPart(t.Type, t.Content));
-                                }
-                            }
-
-                            if (parts.Count != 0)
-                            {
-                                tokenParts.Add(parts);
-                            }
+                            MacroFunction(ident);
                         }
                         else
                         {
-                            Utility.WriteLine("EOF", ConsoleColor.Yellow);
-                            continue;
+                            codeLine += r.Replacement;
                         }
                     }
-
-                    if (tokenParts.Count != args.Count)
+                    else if (IsSpecialMacro(ident))
                     {
-                        Utility.WriteLine("Error, " + args.Count + " argument expected, " + tokenParts.Count + " given.");
-                        continue;
+                        MacroFunction(ident);
                     }
-
-                    Utility.WriteLine("Replacement !", ConsoleColor.Magenta);
-
-                    Tokens.AddRange(info.Replacer.ToTokenList(token.Location, args, tokenParts));
+                    else
+                    {
+                        codeLine += ident;
+                    }
                 }
                 else
                 {
-                    Tokens.Add(token);
+                    codeLine += c;
+                }
+
+                mover.Forward();
+                for (int _ = mover.LineJumped(); _ > 0; --_)
+                {
+                    code.Add(codeLine);
+                    codeLine = "";
+                }
+            }
+            code.Add(codeLine);
+            
+            Program = new Program(previous.Filename, code);
+        }
+
+        private bool IsLetter(char c)
+        {
+            return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_';
+        }
+
+        private bool IsDigit(char c)
+        {
+            return c >= '0' && c <= '9';
+        }
+
+        private string NextIdent()
+        {
+            symbols["__LINE__"] = new Replacer((mover.Line + 1).ToString());
+            symbols["__COLUMN__"] = new Replacer(mover.Column.ToString());
+
+            string ident = "";
+            do
+            {
+                char c = mover.Current();
+                if (IsLetter(c))
+                {
+                    ident += c;
+                }
+                else if (ident.Length > 0 && IsDigit(c))
+                {
+                    ident += c;
+                }
+                else
+                {
+                    return ident;
+                }
+
+                mover.Forward();
+            } while (!mover.EOF() && !mover.LineHasChanged());
+
+            return ident;
+        }
+
+        private void MacroFunction(string ident)
+        {
+            if (mover.Current() != '(')
+            {
+                codeLine += ident;
+                return;
+            }
+
+            List<string> parameters = new List<string>();
+            string cur = "";
+
+            mover.Forward();
+            for (int _ = mover.LineJumped(); _ > 0; --_)
+            {
+                parameters.Add("");
+            }
+
+            while (!mover.EOF() && mover.Current() != ')')
+            {
+                cur += mover.Current();
+                mover.Forward();
+                for (int _ = mover.LineJumped(); _ > 0; --_)
+                {
+                    parameters.Add(cur);
+                    cur = "";
                 }
             }
 
-            Tokens.Add(previous.Last());
+            parameters.Add(cur);
+            if (mover.EOF())
+            {
+                codeLine += ident + '(';
+                foreach(string s in parameters)
+                {
+                    codeLine += s;
+                    code.Add(codeLine);
+                    codeLine = "";
+                }
+            }
+            else
+            {
+                if (IsSpecialMacro(ident))
+                {
+                    SpecialMacro(ident, parameters);
+                }
+                else
+                {
+                    Replace(symbols[ident], parameters);
+                }
 
+                mover.Forward();
+                for (int _ = mover.LineJumped(); _ > 0; --_)
+                {
+                    code.Add(codeLine);
+                    codeLine = "";
+                }
+            }
         }
 
-        private Symbol line_symbol = new Symbol("__LINE__", Parser.TokenType.Ident);
-        private Symbol col_symbol = new Symbol("__COLUMN__", Parser.TokenType.Ident);
-        private Symbol file_symbol = new Symbol("__FILENAME__", Parser.TokenType.Ident);
-        
-        private void Update(Symbol key, string content, Parser.TokenType type)
+        private void Replace (Replacer r, List<string> parameters)
         {
-            Update(key, new SymbolInfo(new Replacer(content, type)));
+
         }
 
-        private void Update(Symbol key, SymbolInfo info)
+        private bool IsSpecialMacro(string ident)
         {
-            symbols[key] = info;
+            return ident == "__STR__" ||
+                   ident == "__CONCAT__" ||
+                   ident == "__MAP__";
         }
 
-        private void InitCommonMacro()
+        private void SpecialMacro(string ident, List<string> parameters)
         {
-            Update(file_symbol, program.Filename, Parser.TokenType.String);
+            if(ident == "__STR__")
+            {
+                for(int p = 0; p < parameters.Count; ++p)
+                {
+                    if (p == 0)
+                    {
+                        code.Add(codeLine + "\"" + parameters[p]);
+                        codeLine = "";
+                    }
+                    else if (p + 1 == parameters.Count)
+                    {
+                        code.Add(parameters[p] + "\"");
+                    }
+                    else
+                    {
+                        code.Add(parameters[p]);
+                    }
+                }
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
-
-        private Symbol TokenToSymbol(Parser.Token token)
-        {
-            return new Symbol(token.Content, token.Type);
-        }
-
     }
 }

@@ -153,9 +153,18 @@ print((150));
 
 [Macro]
 STR(arg) {
-	$arg
+	__STR__(arg)
 }
 
+[Macro]
+CONCAT(a, b) {
+	__CONCAT__(a, b)
+}
+
+[Macro]
+MAP(X, a...) {
+	__MAP__(X, a)
+}
 
 
 
